@@ -1,50 +1,79 @@
-const API_KEY = "39266418effc2e46f90565894fd8c5dc";
-const FIRMS_URL = `https://firms.modaps.eosdis.nasa.gov/api/area/json/MODIS_NRT/world/24h?key=${API_KEY}`;
+const API_KEY = "39266418effc2e46f90565894fd8c5dcY";
 
-// Create map
+
+const MODIS_URL = `https://firms.modaps.eosdis.nasa.gov/api/area/json/MODIS_NRT/world/24h?key=${API_KEY}`;
+const VIIRS_URL = `https://firms.modaps.eosdis.nasa.gov/api/area/json/VIIRS_SNPP_NRT/world/24h?key=${API_KEY}`;
+
 const map = L.map('map').setView([0, 0], 2);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18
 }).addTo(map);
 
-let fireLayer;
-let fireData = [];
+let modisLayer = L.layerGroup();
+let viirsLayer = L.layerGroup();
 
-// load aoi
+let allFiresMODIS = [];
+let allFiresVIIRS = [];
+
 fetch('aoi.json')
     .then(res => res.json())
     .then(aoi => {
-        L.geoJSON(aoi, {color: 'red'}).addTo(map);
-        map.fitBounds(L.geoJSON(aoi).getBounds());
+        const aoiLayer = L.geoJSON(aoi, {color: 'red'}).addTo(map);
+        map.fitBounds(aoiLayer.getBounds());
 
-        // Load fires
         loadFires(aoi);
 
-        // 30 minutes interval
+
         setInterval(() => loadFires(aoi), 1800000);
     });
 
 function loadFires(aoi) {
-    fetch(FIRMS_URL)
+    modisLayer.clearLayers();
+    viirsLayer.clearLayers();
+
+
+    fetch(MODIS_URL)
         .then(res => res.json())
         .then(data => {
-            fireData = data.features.filter(f => turf.booleanPointInPolygon(f, aoi));
+            allFiresMODIS = data.features.filter(f => turf.booleanPointInPolygon(f, aoi));
+            L.geoJSON(allFiresMODIS, {
+                pointToLayer: (feature, latlng) =>
+                    L.circleMarker(latlng, {radius: 5, color: 'orange'}),
+                onEachFeature: (feature, layer) =>
+                    layer.bindPopup(`<b>MODIS Fire</b><br>Brightness: ${feature.properties.brightness}<br>Date: ${feature.properties.acq_date}`)
+            }).addTo(modisLayer);
 
-            if (fireLayer) map.removeLayer(fireLayer);
-            fireLayer = L.geoJSON(fireData, {
-                pointToLayer: (feature, latlng) => L.circleMarker(latlng, {radius: 5, color: 'orange'}),
-                onEachFeature: (feature, layer) => {
-                    layer.bindPopup(`Brightness: ${feature.properties.brightness}<br>Date: ${feature.properties.acq_date}`);
-                }
-            }).addTo(map);
-
-            updateChart();
+            modisLayer.addTo(map);
         });
+
+    fetch(VIIRS_URL)
+        .then(res => res.json())
+        .then(data => {
+            allFiresVIIRS = data.features.filter(f => turf.booleanPointInPolygon(f, aoi));
+            L.geoJSON(allFiresVIIRS, {
+                pointToLayer: (feature, latlng) =>
+                    L.circleMarker(latlng, {radius: 5, color: 'blue'}),
+                onEachFeature: (feature, layer) =>
+                    layer.bindPopup(`<b>VIIRS Fire</b><br>Brightness: ${feature.properties.brightness}<br>Date: ${feature.properties.acq_date}`)
+            }).addTo(viirsLayer);
+
+            viirsLayer.addTo(map);
+        });
+
+
+    L.control.layers({}, {
+        "MODIS Fires": modisLayer,
+        "VIIRS Fires": viirsLayer
+    }).addTo(map);
+
+
+    updateChart();
 }
 
 function updateChart() {
+    const combinedData = [...allFiresMODIS, ...allFiresVIIRS];
     const counts = {};
-    fireData.forEach(f => {
+    combinedData.forEach(f => {
         const date = f.properties.acq_date;
         counts[date] = (counts[date] || 0) + 1;
     });
