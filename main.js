@@ -6,7 +6,7 @@ const VIIRS_URL = `https://firms.modaps.eosdis.nasa.gov/api/area/json/VIIRS_SNPP
 
 const map = L.map('map').setView([0, 0], 2);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18
+    maxZoom: 15
 }).addTo(map);
 
 let modisLayer = L.layerGroup();
@@ -18,7 +18,14 @@ let allFiresVIIRS = [];
 fetch('aoi.json')
     .then(res => res.json())
     .then(aoi => {
-        const aoiLayer = L.geoJSON(aoi, {color: 'red'}).addTo(map);
+        const aoiLayer = L.geoJSON(aoi, {
+        style: {
+            color: 'red',     
+            weight: 2,        
+            fillColor: 'transparent', 
+            fillOpacity: 0    
+            }
+                }).addTo(map);
         map.fitBounds(aoiLayer.getBounds());
 
         loadFires(aoi);
