@@ -1,19 +1,71 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>MODIS Fire Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <meta charset="utf-8" />
+  <title>Fire Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    #map { height: 100vh; width: 100%; }
+  </style>
 </head>
 <body>
-    <h1>MODIS Fire Dashboard</h1>
-    <div id="map"></div>
-    <canvas id="chart" width="400" height="200"></canvas>
+  <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="main.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <script>
+    // 1. Create map
+    var map = L.map('map').setView([0.56463, 110.0945], 8);
+
+    // 2. Add basemap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // 3. Load AOI boundary (aoi.json)
+    fetch("aoi.json")
+      .then(res => res.json())
+      .then(data => {
+        L.geoJSON(data, {
+          style: { color: "blue", weight: 2, fillOpacity: 0.05 }
+        }).addTo(map);
+      });
+
+    // 4. Load Fire Events from Google Sheet (published CSV)
+    var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pubhtml"; 
+    // ⚠️ replace above with your own "Publish to web" CSV link
+
+    Papa.parse(sheetURL, {
+      download: true,
+      header: true,
+      complete: function(results) {
+        results.data.forEach(row => {
+          if(row.latitude && row.longitude) {
+            var lat = parseFloat(row.latitude);
+            var lng = parseFloat(row.longitude);
+            if(!isNaN(lat) && !isNaN(lng)) {
+              L.circleMarker([lat, lng], {
+                radius: 6,
+                fillColor: "red",
+                color: "#fff",
+                weight: 1,
+                fillOpacity: 0.9
+              }).addTo(map)
+                .bindPopup(`
+                  <b>🔥 Fire Event</b><br>
+                  Brightness: ${row.bright_ti4}<br>
+                  FRP: ${row.frp}<br>
+                  Date: ${row.acq_date}<br>
+                  Time: ${row.acq_time}<br>
+                  Satellite: ${row.satellite}<br>
+                  Confidence: ${row.confidence}
+                `);
+            }
+          }
+        });
+      }
+    });
+  </script>
 </body>
 </html>
