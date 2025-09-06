@@ -43,12 +43,12 @@
       margin-bottom: 10px;
     }
     .owner-label {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
+      background: transparent;
+      border: none;
+      box-shadow: none;
       font-size: 11px;
-      font-weight: bold;
       color: black;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -107,8 +107,6 @@
         desaLayer.addLayer(geo);
       });
 
-    var ownerLabels = [];
-
     fetch("PemilikLahan.json")
       .then(res => res.json())
       .then(data => {
@@ -116,34 +114,16 @@
           style: { color: "orange", weight: 2, fillOpacity: 0 },
           onEachFeature: function(feature, layer) {
             if (feature.properties && feature.properties.Owner) {
-              var tooltip = layer.bindTooltip(feature.properties.Owner, {
+              layer.bindTooltip(feature.properties.Owner, {
                 permanent: true,
                 direction: "center",
                 className: "owner-label"
-              }).openTooltip();
-
-              ownerLabels.push(layer.getTooltip());
+              });
             }
           }
         });
         pemilikLayer.addLayer(geo);
-        updateOwnerLabels();
       });
-
-    function updateOwnerLabels() {
-      var currentZoom = map.getZoom();
-      ownerLabels.forEach(function(label) {
-        if (label && label._container) {
-          if (currentZoom > 18) {
-            label._container.style.display = "block";
-          } else {
-            label._container.style.display = "none";
-          }
-        }
-      });
-    }
-
-    map.on("zoomend", updateOwnerLabels);
 
     var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pub?output=csv";
 
@@ -163,7 +143,7 @@
                 weight: 1,
                 fillOpacity: 0.9
               }).bindPopup(`
-                <b>🔥 Fire Event</b><br>
+                <b>Fire Event</b><br>
                 Brightness: ${row.bright_ti4}<br>
                 FRP: ${row.frp}<br>
                 Date: ${row.acq_date}<br>
