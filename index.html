@@ -44,12 +44,13 @@
       margin-bottom: 10px;
     }
 
-    .label-owner {
-      font-size: 12px;
+    .desa-label {
+      background: rgba(255,255,255,0.7);
+      border: 1px solid green;
+      border-radius: 4px;
+      padding: 2px 4px;
+      font-size: 11px;
       color: black;
-      font-weight: bold;
-      white-space: nowrap;
-      text-shadow: 1px 1px 2px white;
     }
   </style>
 </head>
@@ -104,7 +105,16 @@
       .then(res => res.json())
       .then(data => {
         var geo = L.geoJSON(data, {
-          style: { color: "green", weight: 1.5, fillOpacity: 0 }
+          style: { color: "green", weight: 1.5, fillOpacity: 0 },
+          onEachFeature: function(feature, layer) {
+            if (feature.properties && feature.properties.nama_kel) {
+              layer.bindTooltip(feature.properties.nama_kel, {
+                permanent: true,
+                direction: "center",
+                className: "desa-label"
+              });
+            }
+          }
         });
         desaLayer.addLayer(geo);
       });
@@ -113,47 +123,14 @@
       .then(res => res.json())
       .then(data => {
         var geo = L.geoJSON(data, {
-          style: { color: "orange", weight: 2, fillOpacity: 0 }
-        });
-
-        var group = L.layerGroup();
-
-        geo.eachLayer(function(layer) {
-          group.addLayer(layer);
-
-          if (layer.feature && layer.feature.properties && layer.feature.properties.Owner) {
-            var center = null;
-
-            if (layer.getBounds) {
-              center = layer.getBounds().getCenter();
-            } else if (layer.getLatLng) {
-              center = layer.getLatLng();
-            }
-
-            if (center) {
-              var label = L.marker(center, {
-                icon: L.divIcon({
-                  className: 'label-owner',
-                  html: layer.feature.properties.Owner,
-                  iconSize: null
-                })
-              });
-              group.addLayer(label);
-
-              function toggleLabel() {
-                if (map.getZoom() > 18) {
-                  label.getElement().style.display = "block";
-                } else {
-                  label.getElement().style.display = "none";
-                }
-              }
-              map.on("zoomend", toggleLabel);
-              map.whenReady(toggleLabel);
+          style: { color: "orange", weight: 2, fillOpacity: 0 },
+          onEachFeature: function(feature, layer) {
+            if (feature.properties && feature.properties.Owner) {
+              layer.bindPopup(`<b>Pemilik:</b> ${feature.properties.Owner}`);
             }
           }
         });
-
-        pemilikLayer.addLayer(group);
+        pemilikLayer.addLayer(geo);
       });
 
     var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pub?output=csv";
