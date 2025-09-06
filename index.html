@@ -43,11 +43,11 @@
       margin-bottom: 10px;
     }
     .owner-label {
-      background: rgba(255,255,255,0.7);
-      border: 1px solid orange;
-      border-radius: 4px;
-      padding: 2px 4px;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
       font-size: 11px;
+      font-weight: bold;
       color: black;
     }
   </style>
@@ -107,6 +107,8 @@
         desaLayer.addLayer(geo);
       });
 
+    var ownerLabels = [];
+
     fetch("PemilikLahan.json")
       .then(res => res.json())
       .then(data => {
@@ -114,16 +116,34 @@
           style: { color: "orange", weight: 2, fillOpacity: 0 },
           onEachFeature: function(feature, layer) {
             if (feature.properties && feature.properties.Owner) {
-              layer.bindTooltip(feature.properties.Owner, {
-                permanent: true, 
+              var tooltip = layer.bindTooltip(feature.properties.Owner, {
+                permanent: true,
                 direction: "center",
                 className: "owner-label"
-              });
+              }).openTooltip();
+
+              ownerLabels.push(layer.getTooltip());
             }
           }
         });
         pemilikLayer.addLayer(geo);
+        updateOwnerLabels();
       });
+
+    function updateOwnerLabels() {
+      var currentZoom = map.getZoom();
+      ownerLabels.forEach(function(label) {
+        if (label && label._container) {
+          if (currentZoom > 18) {
+            label._container.style.display = "block";
+          } else {
+            label._container.style.display = "none";
+          }
+        }
+      });
+    }
+
+    map.on("zoomend", updateOwnerLabels);
 
     var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pub?output=csv";
 
