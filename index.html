@@ -16,37 +16,59 @@
       height: 100%;
       width: 100%;
     }
-    .custom-control {
+    .custom-panel {
+      position: absolute;
+      top: 20px;
+      right: 20px;
       background: white;
-      padding: 8px;
-      border-radius: 5px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.2);
+      border: 2px solid black;
+      border-radius: 15px;
+      padding: 10px 15px;
       font-size: 13px;
+      z-index: 1000;
+      width: 190px;
     }
-    .custom-control label {
+    .custom-panel h4 {
+      margin: 5px 0 10px;
+      font-size: 14px;
+      text-align: center;
+    }
+    .custom-panel label {
       display: block;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+    .custom-panel select {
+      width: 100%;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
+  <div class="custom-panel">
+    <h4>Kostumisasi Peta</h4>
+    <label>Basemap:</label>
+    <select id="basemapSelect">
+      <option value="osm">OpenStreetMap</option>
+      <option value="satellite">Satellite</option>
+      <option value="dark">Dark</option>
+    </select>
+    <label><input type="checkbox" id="aoiCheck" checked> AOI</label>
+    <label><input type="checkbox" id="desaCheck" checked> Desa</label>
+    <label><input type="checkbox" id="pemilikCheck" checked> Pemilik Lahan</label>
+    <label><input type="checkbox" id="fireCheck" checked> Fire Events</label>
+  </div>
+
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    });
-
-    var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: '© Esri & contributors'
-    });
-
-    var dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap © Carto'
-    });
+    // Basemap
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+    var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
+    var dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© Carto' });
 
     var map = L.map('map', {
       center: [0.56463, 110.0945],
@@ -54,10 +76,12 @@
       layers: [osm]
     });
 
-    var aoiLayer = L.layerGroup();
-    var desaLayer = L.layerGroup();
-    var fireLayer = L.layerGroup();
+    var aoiLayer = L.layerGroup().addTo(map);
+    var desaLayer = L.layerGroup().addTo(map);
+    var pemilikLayer = L.layerGroup().addTo(map);
+    var fireLayer = L.layerGroup().addTo(map);
 
+    // Load Data
     fetch("aoi.json")
       .then(res => res.json())
       .then(data => {
@@ -65,10 +89,8 @@
           style: { color: "blue", weight: 2, fillOpacity: 0.2 }
         });
         aoiLayer.addLayer(geo);
-        aoiLayer.addTo(map);
         map.fitBounds(geo.getBounds(), { maxZoom: 15 });
       });
-
 
     fetch("Desa.json")
       .then(res => res.json())
@@ -77,20 +99,19 @@
           style: { color: "green", weight: 1.5, fillOpacity: 0 }
         });
         desaLayer.addLayer(geo);
-        desaLayer.addTo(map);
       });
 
     fetch("PemilikLahan.json")
       .then(res => res.json())
       .then(data => {
         var geo = L.geoJSON(data, {
-          style: { color: "yellow", weight: 1.5, fillOpacity: 0 }
+          style: { color: "orange", weight: 2, fillOpacity: 0 }
         });
-        desaLayer.addLayer(geo);
-        desaLayer.addTo(map);
+        pemilikLayer.addLayer(geo);
       });
 
-    var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pub?output=csv"; 
+    // Fire data
+    var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pub?output=csv";
 
     Papa.parse(sheetURL, {
       download: true,
@@ -120,46 +141,34 @@
             }
           }
         });
-        fireLayer.addTo(map);
       }
     });
 
-    var baseMaps = {
-      "OpenStreetMap": osm,
-      "Satellite": satellite,
-      "Dark": dark
-    };
+    // Panel
+    document.getElementById("basemapSelect").addEventListener("change", function() {
+      map.eachLayer(function(layer) { map.removeLayer(layer); });
+      if(this.value === "osm") osm.addTo(map);
+      if(this.value === "satellite") satellite.addTo(map);
+      if(this.value === "dark") dark.addTo(map);
 
-    var overlays = {
-      "AOI": aoiLayer,
-      "Desa": desaLayer,
-      "Fire Events": fireLayer
-    };
-
-    L.control.layers(baseMaps, overlays).addTo(map);
-
-    var transparencyControl = L.control({ position: 'topright' });
-    transparencyControl.onAdd = function () {
-      var div = L.DomUtil.create('div', 'custom-control');
-      div.innerHTML = `
-        <label>AOI Transparency</label>
-        <input id="aoiRange" type="range" min="0" max="1" step="0.1" value="0.2">
-        <label>Desa Transparency</label>
-        <input id="desaRange" type="range" min="0" max="1" step="0.1" value="0">
-      `;
-      return div;
-    };
-    transparencyControl.addTo(map);
-
-    document.addEventListener("input", function(e){
-      if(e.target.id === "aoiRange") {
-        aoiLayer.eachLayer(layer => layer.setStyle({ fillOpacity: parseFloat(e.target.value) }));
-      }
-      if(e.target.id === "desaRange") {
-        desaLayer.eachLayer(layer => layer.setStyle({ fillOpacity: parseFloat(e.target.value) }));
-      }
+      if(document.getElementById("aoiCheck").checked) aoiLayer.addTo(map);
+      if(document.getElementById("desaCheck").checked) desaLayer.addTo(map);
+      if(document.getElementById("pemilikCheck").checked) pemilikLayer.addTo(map);
+      if(document.getElementById("fireCheck").checked) fireLayer.addTo(map);
     });
 
+    document.getElementById("aoiCheck").addEventListener("change", function() {
+      if(this.checked) map.addLayer(aoiLayer); else map.removeLayer(aoiLayer);
+    });
+    document.getElementById("desaCheck").addEventListener("change", function() {
+      if(this.checked) map.addLayer(desaLayer); else map.removeLayer(desaLayer);
+    });
+    document.getElementById("pemilikCheck").addEventListener("change", function() {
+      if(this.checked) map.addLayer(pemilikLayer); else map.removeLayer(pemilikLayer);
+    });
+    document.getElementById("fireCheck").addEventListener("change", function() {
+      if(this.checked) map.addLayer(fireLayer); else map.removeLayer(fireLayer);
+    });
   </script>
 </body>
 </html>
