@@ -39,6 +39,15 @@
         }).addTo(map);
       });
 
+    fetch("BatasDesa.json")
+      .then(res => res.json())
+      .then(data => {
+        L.geoJSON(data, {
+          style: { color: "green", weight: 1.5, fillOpacity: 0.1 }
+        }).addTo(map)
+          .bindPopup("📍 Batas Desa");
+      });
+
     var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pub?output=csv"; 
 
     Papa.parse(sheetURL, {
