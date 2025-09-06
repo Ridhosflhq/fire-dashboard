@@ -42,13 +42,6 @@
       width: 100%;
       margin-bottom: 10px;
     }
-    .label-owner {
-      font-size: 12px;
-      color: black;
-      font-weight: bold;
-      white-space: nowrap;
-      text-shadow: 1px 1px 2px white;
-    }
   </style>
 </head>
 <body>
@@ -112,45 +105,7 @@
         var geo = L.geoJSON(data, {
           style: { color: "orange", weight: 2, fillOpacity: 0 }
         });
-
-        var group = L.layerGroup();
-
-        geo.eachLayer(function(layer) {
-          group.addLayer(layer);
-
-          if (layer.feature && layer.feature.properties && layer.feature.properties.Owner) {
-            var center = null;
-
-            if (layer.getBounds) {
-              center = layer.getBounds().getCenter();
-            } else if (layer.getLatLng) {
-              center = layer.getLatLng();
-            }
-
-            if (center) {
-              var label = L.marker(center, {
-                icon: L.divIcon({
-                  className: 'label-owner',
-                  html: layer.feature.properties.Owner,
-                  iconSize: null
-                })
-              });
-              group.addLayer(label);
-
-              function toggleLabel() {
-                if (map.getZoom() >= 19) {
-                  label.getElement().style.display = "block";
-                } else {
-                  label.getElement().style.display = "none";
-                }
-              }
-              map.on("zoomend", toggleLabel);
-              map.whenReady(toggleLabel);
-            }
-          }
-        });
-
-        pemilikLayer.addLayer(group);
+        pemilikLayer.addLayer(geo);
       });
 
     var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pub?output=csv";
@@ -171,7 +126,7 @@
                 weight: 1,
                 fillOpacity: 0.9
               }).bindPopup(`
-                <b>Fire Event</b><br>
+                <b>🔥 Fire Event</b><br>
                 Brightness: ${row.bright_ti4}<br>
                 FRP: ${row.frp}<br>
                 Date: ${row.acq_date}<br>
@@ -186,6 +141,7 @@
       }
     });
 
+    // Panel control
     document.getElementById("basemapSelect").addEventListener("change", function() {
       map.eachLayer(function(layer) { map.removeLayer(layer); });
       if(this.value === "osm") osm.addTo(map);
