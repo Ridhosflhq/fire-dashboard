@@ -16,6 +16,7 @@
       height: 100%;
       width: 100%;
     }
+
     .custom-panel {
       position: absolute;
       top: 20px;
@@ -79,7 +80,7 @@
     var desaLayer = L.layerGroup().addTo(map);
     var pemilikLayer = L.layerGroup().addTo(map);
     var fireLayer = L.layerGroup().addTo(map);
-
+    
     fetch("aoi.json")
       .then(res => res.json())
       .then(data => {
@@ -141,7 +142,6 @@
       }
     });
 
-    // Panel control
     document.getElementById("basemapSelect").addEventListener("change", function() {
       map.eachLayer(function(layer) { map.removeLayer(layer); });
       if(this.value === "osm") osm.addTo(map);
