@@ -25,7 +25,7 @@
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-    var map = L.map('map').setView([0.56463, 110.0945], 14);
+    var map = L.map('map');
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
@@ -34,18 +34,19 @@
     fetch("aoi.json")
       .then(res => res.json())
       .then(data => {
-        L.geoJSON(data, {
+        var aoiLayer = L.geoJSON(data, {
           style: { color: "blue", weight: 2, fillOpacity: 0.05 }
         }).addTo(map);
+
+        map.fitBounds(aoiLayer.getBounds(), { maxZoom: 15 });
       });
 
-    fetch("BatasDesa.json")
+    fetch("Desa.json")
       .then(res => res.json())
       .then(data => {
         L.geoJSON(data, {
-          style: { color: "green", weight: 1.5, fillOpacity: 0.1 }
-        }).addTo(map)
-          .bindPopup("📍 Batas Desa");
+          style: { color: "green", weight: 1.5, fillOpacity: 0 }
+        }).addTo(map);
       });
 
     var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pub?output=csv"; 
