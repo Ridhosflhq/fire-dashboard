@@ -42,7 +42,7 @@
       width: 100%;
       margin-bottom: 10px;
     }
-    .owner-label {
+    .owner {
       background: rgba(255, 255, 255, 0.7);
       border: 1px solid orange;
       border-radius: 4px;
@@ -118,7 +118,7 @@
               layer.bindTooltip(feature.properties.owner, {
                 permanent: true,
                 direction: "center",
-                className: "owner-label"
+                className: "owner"
               });
             }
           }
@@ -144,7 +144,7 @@
                 weight: 1,
                 fillOpacity: 0.9
               }).bindPopup(`
-                <b>🔥 Fire Event</b><br>
+                <b>Fire Event</b><br>
                 Brightness: ${row.bright_ti4}<br>
                 FRP: ${row.frp}<br>
                 Date: ${row.acq_date}<br>
