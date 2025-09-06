@@ -17,9 +17,22 @@
       width: 100%;
     }
 
-    .custom-panel {
+    .toggle-btn {
       position: absolute;
       top: 20px;
+      right: 20px;
+      background: #007bff;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 1100;
+      font-size: 13px;
+    }
+
+    .custom-panel {
+      position: absolute;
+      top: 60px;
       right: 20px;
       background: white;
       border: 2px solid black;
@@ -28,6 +41,7 @@
       font-size: 13px;
       z-index: 1000;
       width: 190px;
+      display: none;
     }
     .custom-panel h4 {
       margin: 5px 0 10px;
@@ -57,7 +71,9 @@
 <body>
   <div id="map"></div>
 
-  <div class="custom-panel">
+  <div class="toggle-btn" onclick="togglePanel()">☰ Menu</div>
+
+  <div class="custom-panel" id="customPanel">
     <h4>Kostumisasi Peta</h4>
     <label>Basemap:</label>
     <select id="basemapSelect">
@@ -67,7 +83,7 @@
     </select>
     <label><input type="checkbox" id="aoiCheck" checked> AOI</label>
     <label><input type="checkbox" id="desaCheck" checked> Desa</label>
-    <label><input type="checkbox" id="pemilikCheck" checked> Pemilik Lahan</label>
+    <label><input type="checkbox" id="pemilikCheck"> Pemilik Lahan</label>
     <label><input type="checkbox" id="fireCheck" checked> Fire Events</label>
   </div>
 
@@ -75,6 +91,14 @@
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
+    function togglePanel() {
+      var panel = document.getElementById("customPanel");
+      if (panel.style.display === "none" || panel.style.display === "") {
+        panel.style.display = "block";
+      } else {
+        panel.style.display = "none";
+      }
+    }
 
     var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
     var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
@@ -88,7 +112,7 @@
 
     var aoiLayer = L.layerGroup().addTo(map);
     var desaLayer = L.layerGroup().addTo(map);
-    var pemilikLayer = L.layerGroup().addTo(map);
+    var pemilikLayer = L.layerGroup();
     var fireLayer = L.layerGroup().addTo(map);
 
     fetch("aoi.json")
@@ -151,7 +175,7 @@
                 weight: 1,
                 fillOpacity: 0.9
               }).bindPopup(`
-                <b>🔥 Fire Event</b><br>
+                <b>Fire Event</b><br>
                 Brightness: ${row.bright_ti4}<br>
                 FRP: ${row.frp}<br>
                 Date: ${row.acq_date}<br>
