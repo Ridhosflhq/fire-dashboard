@@ -55,28 +55,29 @@
       layers: [osm]
     });
 
-    var aoiLayer, desaLayer;
-    var overlays = {};
+    var aoiLayer = L.layerGroup();
+    var desaLayer = L.layerGroup();
+    var fireLayer = L.layerGroup();
 
     fetch("aoi.json")
       .then(res => res.json())
       .then(data => {
-        aoiLayer = L.geoJSON(data, {
+        var geo = L.geoJSON(data, {
           style: { color: "blue", weight: 2, fillOpacity: 0.2 }
-        }).addTo(map);
-
-        overlays["AOI"] = aoiLayer;
-        map.fitBounds(aoiLayer.getBounds(), { maxZoom: 15 });
+        });
+        aoiLayer.addLayer(geo);
+        aoiLayer.addTo(map);
+        map.fitBounds(geo.getBounds(), { maxZoom: 15 });
       });
 
     fetch("Desa.json")
       .then(res => res.json())
       .then(data => {
-        desaLayer = L.geoJSON(data, {
+        var geo = L.geoJSON(data, {
           style: { color: "green", weight: 1.5, fillOpacity: 0 }
-        }).addTo(map);
-
-        overlays["Desa"] = desaLayer;
+        });
+        desaLayer.addLayer(geo);
+        desaLayer.addTo(map);
       });
 
     var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pub?output=csv"; 
@@ -90,32 +91,39 @@
             var lat = parseFloat(row.latitude);
             var lng = parseFloat(row.longitude);
             if(!isNaN(lat) && !isNaN(lng)) {
-              L.circleMarker([lat, lng], {
+              var marker = L.circleMarker([lat, lng], {
                 radius: 6,
                 fillColor: "red",
                 color: "#fff",
                 weight: 1,
                 fillOpacity: 0.9
-              }).addTo(map)
-                .bindPopup(`
-                  <b>🔥 Fire Event</b><br>
-                  Brightness: ${row.bright_ti4}<br>
-                  FRP: ${row.frp}<br>
-                  Date: ${row.acq_date}<br>
-                  Time: ${row.acq_time}<br>
-                  Satellite: ${row.satellite}<br>
-                  Confidence: ${row.confidence}
-                `);
+              }).bindPopup(`
+                <b>🔥 Fire Event</b><br>
+                Brightness: ${row.bright_ti4}<br>
+                FRP: ${row.frp}<br>
+                Date: ${row.acq_date}<br>
+                Time: ${row.acq_time}<br>
+                Satellite: ${row.satellite}<br>
+                Confidence: ${row.confidence}
+              `);
+              fireLayer.addLayer(marker);
             }
           }
         });
+        fireLayer.addTo(map);
       }
     });
-
+    
     var baseMaps = {
       "OpenStreetMap": osm,
       "Satellite": satellite,
       "Dark": dark
+    };
+
+    var overlays = {
+      "AOI": aoiLayer,
+      "Desa": desaLayer,
+      "Fire Events": fireLayer
     };
 
     L.control.layers(baseMaps, overlays).addTo(map);
@@ -134,11 +142,11 @@
     transparencyControl.addTo(map);
 
     document.addEventListener("input", function(e){
-      if(e.target.id === "aoiRange" && aoiLayer) {
-        aoiLayer.setStyle({ fillOpacity: parseFloat(e.target.value) });
+      if(e.target.id === "aoiRange") {
+        aoiLayer.eachLayer(layer => layer.setStyle({ fillOpacity: parseFloat(e.target.value) }));
       }
-      if(e.target.id === "desaRange" && desaLayer) {
-        desaLayer.setStyle({ fillOpacity: parseFloat(e.target.value) });
+      if(e.target.id === "desaRange") {
+        desaLayer.eachLayer(layer => layer.setStyle({ fillOpacity: parseFloat(e.target.value) }));
       }
     });
 
