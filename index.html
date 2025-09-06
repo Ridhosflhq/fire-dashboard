@@ -43,6 +43,13 @@
       width: 100%;
       margin-bottom: 10px;
     }
+
+    .pemilik-label {
+      font-size: 12px;
+      color: black;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px white;
+    }
   </style>
 </head>
 <body>
@@ -80,7 +87,8 @@
     var desaLayer = L.layerGroup().addTo(map);
     var pemilikLayer = L.layerGroup().addTo(map);
     var fireLayer = L.layerGroup().addTo(map);
-    
+    var pemilikLabels = L.layerGroup().addTo(map);
+
     fetch("aoi.json")
       .then(res => res.json())
       .then(data => {
@@ -107,6 +115,21 @@
           style: { color: "orange", weight: 2, fillOpacity: 0 }
         });
         pemilikLayer.addLayer(geo);
+
+        geo.eachLayer(function(layer) {
+          if (layer.feature && layer.feature.properties && layer.feature.properties.nama) {
+            var center = layer.getBounds().getCenter();
+            var label = L.marker(center, {
+              icon: L.divIcon({
+                className: "pemilik-label",
+                html: layer.feature.properties.nama
+              })
+            });
+            pemilikLabels.addLayer(label);
+          }
+        });
+
+        updateLabels();
       });
 
     var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pub?output=csv";
@@ -150,7 +173,10 @@
 
       if(document.getElementById("aoiCheck").checked) aoiLayer.addTo(map);
       if(document.getElementById("desaCheck").checked) desaLayer.addTo(map);
-      if(document.getElementById("pemilikCheck").checked) pemilikLayer.addTo(map);
+      if(document.getElementById("pemilikCheck").checked) { 
+        pemilikLayer.addTo(map); 
+        if(map.getZoom() >= 19) pemilikLabels.addTo(map);
+      }
       if(document.getElementById("fireCheck").checked) fireLayer.addTo(map);
     });
 
@@ -161,11 +187,27 @@
       if(this.checked) map.addLayer(desaLayer); else map.removeLayer(desaLayer);
     });
     document.getElementById("pemilikCheck").addEventListener("change", function() {
-      if(this.checked) map.addLayer(pemilikLayer); else map.removeLayer(pemilikLayer);
+      if(this.checked) { 
+        map.addLayer(pemilikLayer); 
+        if(map.getZoom() >= 19) pemilikLabels.addTo(map);
+      } else { 
+        map.removeLayer(pemilikLayer); 
+        map.removeLayer(pemilikLabels);
+      }
     });
     document.getElementById("fireCheck").addEventListener("change", function() {
       if(this.checked) map.addLayer(fireLayer); else map.removeLayer(fireLayer);
     });
+
+    function updateLabels() {
+      if (map.getZoom() >= 19 && document.getElementById("pemilikCheck").checked) {
+        if(!map.hasLayer(pemilikLabels)) map.addLayer(pemilikLabels);
+      } else {
+        if(map.hasLayer(pemilikLabels)) map.removeLayer(pemilikLabels);
+      }
+    }
+
+    map.on("zoomend", updateLabels);
   </script>
 </body>
 </html>
