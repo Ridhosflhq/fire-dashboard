@@ -15,15 +15,13 @@
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-    // 1. Create map
+
     var map = L.map('map').setView([0.56463, 110.0945], 8);
 
-    // 2. Add basemap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // 3. Load AOI boundary (aoi.json)
     fetch("aoi.json")
       .then(res => res.json())
       .then(data => {
@@ -32,9 +30,7 @@
         }).addTo(map);
       });
 
-    // 4. Load Fire Events from Google Sheet (published CSV)
-    var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pubhtml"; 
-    // ⚠️ replace above with your own "Publish to web" CSV link
+    var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pub?output=csv"; 
 
     Papa.parse(sheetURL, {
       download: true,
