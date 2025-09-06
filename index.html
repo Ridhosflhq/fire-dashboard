@@ -99,14 +99,23 @@
         desaLayer.addLayer(geo);
       });
 
-    fetch("PemilikLahan.json")
-      .then(res => res.json())
-      .then(data => {
-        var geo = L.geoJSON(data, {
-          style: { color: "orange", weight: 2, fillOpacity: 0 }
-        });
-        pemilikLayer.addLayer(geo);
-      });
+fetch("PemilikLahan.json")
+  .then(res => res.json())
+  .then(data => {
+    var geo = L.geoJSON(data, {
+      style: { color: "orange", weight: 2, fillOpacity: 0 },
+      onEachFeature: function (feature, layer) {
+        if (feature.properties && feature.properties.owner) {
+          layer.bindTooltip(feature.properties.owner, {
+            permanent: true,
+            direction: "center",
+            className: "owner"
+          });
+        }
+      }
+    });
+    pemilikLayer.addLayer(geo);
+  });
 
     var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEfrfbRFFtXYt6k8viYBPJRI7Nu0UbYdW8G8lVCjwkUobx2pCpwyJ3kXvTLP_mseR4uJZV_u37FYHE/pub?output=csv";
 
