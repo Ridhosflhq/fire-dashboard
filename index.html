@@ -177,12 +177,11 @@
                 fillOpacity: 0.9
               }).bindPopup(`
                 <b>Fire Event</b><br>
-                Brightness: ${row.bright_ti4}<br>
-                FRP: ${row.frp}<br>
                 Date: ${row.acq_date}<br>
-                Time: ${row.acq_time}<br>
                 Satellite: ${row.satellite}<br>
-                Confidence: ${row.confidence}
+                Village: ${row.nama_kel}<br>
+                Land Cover: ${row.LC23}
+                Blok: ${row.Blok}
               `);
               fireLayer.addLayer(marker);
             }
