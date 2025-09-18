@@ -77,26 +77,32 @@
   <div class="toggle-btn" onclick="togglePanel()">☰ Menu</div>
 
   <div class="custom-panel" id="customPanel">
-    <h4>Peta Sebaran Api 30 Hari Terakhir</h4>
-    <label>Basemap:</label>
-    <select id="basemapSelect">
-      <option value="osm">OpenStreetMap</option>
-      <option value="satellite">Satellite</option>
-      <option value="dark">Dark</option>
-    </select>
-    <label><input type="checkbox" id="aoiCheck" checked> AOI</label>
-    <label><input type="checkbox" id="desaCheck" checked> Desa</label>
-    <label><input type="checkbox" id="pemilikCheck"> Pemilik Lahan</label>
-    <label><input type="checkbox" id="fireCheck" checked> Fire Events</label>
+  <h4>Peta Sebaran Api 30 Hari Terakhir</h4>
+  <label>Basemap:</label>
+  <select id="basemapSelect">
+    <option value="osm">OpenStreetMap</option>
+    <option value="satellite">Satellite</option>
+    <option value="dark">Dark</option>
+  </select>
+  <label><input type="checkbox" id="aoiCheck" checked> AOI</label>
+  <label><input type="checkbox" id="desaCheck" checked> Desa</label>
+  <label><input type="checkbox" id="pemilikCheck"> Pemilik Lahan</label>
+  <label><input type="checkbox" id="fireCheck" checked> Fire Events</label>
 
-    <div style="margin-top:10px; font-size:11px; color:#333; line-height:1.4; text-align:justify;">
+  <button id="dashboardBtn" style="margin-top:10px; width:100%; padding:6px; border-radius:8px; cursor:pointer; font-weight:bold;">
+    Open Dashboard
+  </button>
+
+  <div style="margin-top:10px; font-size:11px; color:#333; line-height:1.4; text-align:justify;">
     <b>Sumber Data:</b><br>
-    Data titik api berasal dari <a href="https://firms.modaps.eosdis.nasa.gov/" target="_blank">NASA FIRMS API</a>, 
+    Data titik api berasal dari 
+    <a href="https://firms.modaps.eosdis.nasa.gov/" target="_blank">NASA FIRMS API</a>, 
     dengan tiga sumber satelit yang digunaka:<br>
     • MODIS (Terra & Aqua)<br>
     • VIIRS NOAA-20<br>
     • VIIRS Suomi NPP
   </div>
+</div>
 </div>
     
   </div>
