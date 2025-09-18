@@ -6,35 +6,47 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; }
-    h2 { margin: 5px; text-align:center; }
-    .filter-box { padding: 5px; background: #e9ecef; display:flex; gap:10px; align-items:center; justify-content:center; }
-    
-    .grid {
-      flex: 1;
-      display: grid;
-      grid-template-rows: 40% 20% 40%;
-      grid-template-columns: 2fr 1fr;
-      grid-template-areas:
-        "map cards"
-        "charts charts"
-        "table table";
-      gap: 5px;
-      padding: 5px;
-      box-sizing: border-box;
-    }
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+  }
 
-    #map { grid-area: map; width:100%; height:100%; border-radius:8px; }
-    .cards { grid-area: cards; display:flex; flex-direction:column; gap:5px; }
-    .card { flex:1; background:#f8f8f8; border-radius:8px; display:flex; flex-direction:column; justify-content:center; align-items:center; }
-    
-    .charts { grid-area: charts; display:flex; gap:10px; }
-    .charts canvas { flex:1; background:#fff; border-radius:8px; }
-    
-    .table-container { grid-area: table; background:#fff; border-radius:8px; display:flex; flex-direction:column; }
-    .table-container h3 { margin:5px; text-align:center; }
-    #dataTable_wrapper { flex:1; overflow-y:auto; }
-  </style>
+  .dashboard {
+    display: grid;
+    grid-template-areas: 
+      "map map summary summary"
+      "desa blok desa blok"
+      "table table table table";
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-rows: 40vh 25vh 35vh;
+    gap: 10px;
+    height: 100vh; 
+  }
+
+  #map { grid-area: map; }
+  #summary { grid-area: summary; text-align: center; }
+  #desaChart { grid-area: desa; }
+  #blokChart { grid-area: blok; }
+  #table { grid-area: table; overflow: auto; }
+  
+  .chart {
+    width: 100% !important;
+    height: 100% !important;
+  }
+</style>
+
+<div class="dashboard">
+  <div id="map"></div>
+  <div id="summary">
+    <h3>Total Records</h3>
+    <div id="totalRecords">0</div>
+  </div>
+  <canvas id="desaChart" class="chart"></canvas>
+  <canvas id="blokChart" class="chart"></canvas>
+  <div id="table"></div>
+</div>
+
 </head>
 <body>
 
