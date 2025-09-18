@@ -23,6 +23,7 @@
       border-radius: 12px;
       padding: 15px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 10px; /* spasi antar card */
     }
     #map {
       height: 400px;
@@ -36,6 +37,10 @@
       max-height: 250px;
       overflow-y: auto;
     }
+    .danger-low { color: green; font-weight: bold; }
+    .danger-medium { color: orange; font-weight: bold; }
+    .danger-high { color: red; font-weight: bold; }
+    .danger-extreme { color: darkred; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -101,14 +106,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ403sZK2ewFnVV11IPe-z-DXvTcyNFmVdtpxNRFfoCac2dOcwIvsy3yRiA2-2hK0aE-jdsvJpSwEzG/pub?output=csv";
+    const dangerURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSyVrG2pa34SK0pbRtAbdR4CBYt9KhpRCw3HYiDJWfDfEmV5oBe5-MrvJdiHk9eAg3jgx6VCHPC8fJZ/pub?gid=1905680802&single=true&output=csv";
+
     let allData = [];
     let desaChart, blokChart;
-
 
     const map = L.map('map').setView([0.85, 110.33], 9);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     let markersLayer = L.layerGroup().addTo(map);
 
+    // load hotspot data
     Papa.parse(sheetURL, {
       download: true,
       header: true,
@@ -117,6 +124,29 @@
         updateDashboard(allData);
       }
     });
+
+    // load fire danger data
+    Papa.parse(dangerURL, {
+      download: true,
+      header: true,
+      complete: function(results) {
+        const rows = results.data.filter(r => r.Tanggal); // buang baris kosong
+        const latest = rows[rows.length-1]; // ambil data terakhir
+        updateDanger("blok1Danger", latest["Blok 1"]);
+        updateDanger("blok2Danger", latest["Blok 2"]);
+      }
+    });
+
+    function updateDanger(id, value) {
+      const el = document.getElementById(id);
+      el.textContent = value;
+      el.className = "";
+      if (!value) return;
+      if (value.includes("LOW")) el.classList.add("danger-low");
+      else if (value.includes("MEDIUM")) el.classList.add("danger-medium");
+      else if (value.includes("HIGH")) el.classList.add("danger-high");
+      else if (value.includes("EXTREME")) el.classList.add("danger-extreme");
+    }
 
     function updateDashboard(data) {
       markersLayer.clearLayers();
