@@ -11,31 +11,38 @@
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 10px;
+      height: 100vh;
+      overflow: hidden; /* biar dashboard penuh layar */
     }
     .dashboard {
       display: grid;
       grid-template-columns: 1fr 2fr 1fr;
       grid-template-rows: auto auto auto;
       gap: 15px;
+      height: calc(100vh - 60px); /* sisakan untuk judul */
     }
     .card {
       background: #fff;
       border-radius: 12px;
       padding: 15px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      margin-bottom: 10px; /* spasi antar card */
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
     }
     #map {
-      height: 400px;
+      height: 100%;
       border-radius: 12px;
     }
     canvas {
       width: 100% !important;
       height: 200px !important;
     }
+    /* buat container data selalu penuh */
     .table-container {
-      max-height: 250px;
+      flex: 1; /* isi penuh tinggi card */
       overflow-y: auto;
+      min-height: 0;
     }
     .danger-low { color: green; font-weight: bold; }
     .danger-medium { color: orange; font-weight: bold; }
@@ -44,7 +51,7 @@
   </style>
 </head>
 <body>
-  <h4 class="text-center mb-4">Dashboard Pemantauan Kebakaran</h4>
+  <h4 class="text-center mb-2">Dashboard Pemantauan Kebakaran</h4>
 
   <div class="dashboard">
 
@@ -89,6 +96,10 @@
         <button class="btn btn-sm btn-outline-secondary mt-2" onclick="resetFilter()">Reset</button>
       </div>
       <div class="card">
+        <h6>Hotspot per Waktu</h6>
+        <canvas id="timeChart"></canvas>
+      </div>
+      <div class="card">
         <h6>Data Penggarap Lahan</h6>
         <div class="table-container">
           <table class="table table-sm table-striped">
@@ -100,7 +111,6 @@
     </div>
   </div>
 
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -109,7 +119,7 @@
     const dangerURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSyVrG2pa34SK0pbRtAbdR4CBYt9KhpRCw3HYiDJWfDfEmV5oBe5-MrvJdiHk9eAg3jgx6VCHPC8fJZ/pub?gid=1905680802&single=true&output=csv";
 
     let allData = [];
-    let desaChart, blokChart;
+    let desaChart, blokChart, timeChart;
 
     const map = L.map('map').setView([0.85, 110.33], 9);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
@@ -130,8 +140,8 @@
       download: true,
       header: true,
       complete: function(results) {
-        const rows = results.data.filter(r => r.Tanggal); // buang baris kosong
-        const latest = rows[rows.length-1]; // ambil data terakhir
+        const rows = results.data.filter(r => r.Tanggal);
+        const latest = rows[rows.length-1];
         updateDanger("blok1Danger", latest["Blok 1"]);
         updateDanger("blok2Danger", latest["Blok 2"]);
       }
@@ -170,14 +180,20 @@
 
       const desaCount = {};
       filtered.forEach(d => { desaCount[d.nama_kel] = (desaCount[d.nama_kel]||0)+1 });
-      updateChart(desaChart, "desaChart", Object.keys(desaCount), Object.values(desaCount), "orange");
+      updateBarChart(desaChart, "desaChart", Object.keys(desaCount), Object.values(desaCount), "orange");
       
       const blokCount = {};
       filtered.forEach(d => {
         let key = d.acq_date.slice(0,7) + " - " + d.Blok;
         blokCount[key] = (blokCount[key]||0)+1;
       });
-      updateChart(blokChart, "blokChart", Object.keys(blokCount), Object.values(blokCount), "green");
+      updateBarChart(blokChart, "blokChart", Object.keys(blokCount), Object.values(blokCount), "green");
+
+      // grafik garis hotspot per hari
+      const timeCount = {};
+      filtered.forEach(d => { timeCount[d.acq_date] = (timeCount[d.acq_date]||0)+1 });
+      const sortedDates = Object.keys(timeCount).sort();
+      updateLineChart(timeChart, "timeChart", sortedDates, sortedDates.map(k=>timeCount[k]), "red");
 
       const tbody = document.getElementById("dataTable");
       tbody.innerHTML = "";
@@ -190,7 +206,7 @@
       });
     }
 
-    function updateChart(chart, id, labels, values, color) {
+    function updateBarChart(chart, id, labels, values, color) {
       if (chart) chart.destroy();
       chart = new Chart(document.getElementById(id), {
         type: "bar",
@@ -199,6 +215,16 @@
       });
       if (id==="desaChart") desaChart = chart;
       if (id==="blokChart") blokChart = chart;
+    }
+
+    function updateLineChart(chart, id, labels, values, color) {
+      if (chart) chart.destroy();
+      chart = new Chart(document.getElementById(id), {
+        type: "line",
+        data: { labels: labels, datasets: [{data: values, borderColor: color, backgroundColor: color, fill: false, tension:0.3}] },
+        options: { plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false }
+      });
+      if (id==="timeChart") timeChart = chart;
     }
 
     function resetFilter() {
