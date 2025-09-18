@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Hotspot Dashboard</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+  <title>Dashboard Hotspot</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
     body {
       background: #f5f5f5;
@@ -12,248 +13,170 @@
       margin: 0;
       padding: 10px;
       height: 100vh;
-      overflow: hidden;
+      overflow-y: auto; /* boleh scroll jika isi lebih banyak */
     }
+
     .dashboard {
       display: grid;
       grid-template-columns: 1fr 2fr 1fr;
       gap: 15px;
-      height: calc(100vh - 60px);
+      align-items: start; /* isi mulai dari atas */
     }
+
+    .left-col, .middle-col, .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
     .card {
       background: #fff;
       border-radius: 12px;
       padding: 15px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      margin-bottom: 10px;
-      display: flex;
-      flex-direction: column;
     }
-    .left-col, .middle-col, .right-col {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      overflow: hidden;
-    }
-    .middle-col .card {
-      flex: 1; /* supaya peta isi penuh */
-    }
+
     #map {
-      flex: 1;
-      min-height: 350px;
+      min-height: 450px;
       border-radius: 12px;
     }
+
     canvas {
       width: 100% !important;
-      height: 200px !important;
+      height: 250px !important; /* seragam semua chart */
     }
+
     .table-container {
-      flex: 1;
+      max-height: 300px;
       overflow-y: auto;
-      min-height: 0;
     }
-    .danger-low { color: green; font-weight: bold; }
-    .danger-medium { color: orange; font-weight: bold; }
-    .danger-high { color: red; font-weight: bold; }
-    .danger-extreme { color: darkred; font-weight: bold; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 6px;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    table th {
+      background: #f0f0f0;
+    }
   </style>
 </head>
 <body>
-  <h4 class="text-center mb-2">Dashboard Pemantauan Kebakaran</h4>
-
   <div class="dashboard">
-
+    <!-- Kiri -->
     <div class="left-col">
-      <div class="card text-center">
-        <h6>Titik Api Hari Ini</h6>
-        <h2 id="todayHotspot">0</h2>
-      </div>
-      <div class="card text-center">
-        <h6>Titik Api Bulan Ini</h6>
-        <h2 id="monthHotspot">0</h2>
+      <div class="card">
+        <h3>Titik Api Hari Ini</h3>
+        <canvas id="todayChart"></canvas>
       </div>
       <div class="card">
-        <h6>Titik Api per Desa</h6>
+        <h3>Titik Api Bulan Ini</h3>
+        <canvas id="monthChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Titik Api per Desa</h3>
         <canvas id="desaChart"></canvas>
       </div>
       <div class="card">
-        <h6>Akumulasi Titik Api</h6>
-        <canvas id="blokChart"></canvas>
+        <h3>Akumulasi Titik Api</h3>
+        <canvas id="akumulasiChart"></canvas>
       </div>
       <div class="card">
-        <h6>Hotspot per Waktu</h6>
+        <h3>Hotspot per Waktu</h3>
         <canvas id="timeChart"></canvas>
       </div>
     </div>
 
+    <!-- Tengah -->
     <div class="middle-col">
       <div class="card">
-        <h6>Sebaran Titik Api</h6>
+        <h3>Peta Titik Api</h3>
         <div id="map"></div>
       </div>
     </div>
 
+    <!-- Kanan -->
     <div class="right-col">
-      <div class="card text-center">
-        <h6>Rating Bahaya Blok 1</h6>
-        <h4 id="blok1Danger">-</h4>
-      </div>
-      <div class="card text-center">
-        <h6>Rating Bahaya Blok 2</h6>
-        <h4 id="blok2Danger">-</h4>
-      </div>
-      <div class="card text-center">
-        <label for="dateFilter">Select date range:</label>
-        <input type="date" id="startDate"> - <input type="date" id="endDate">
-        <button class="btn btn-sm btn-outline-secondary mt-2" onclick="resetFilter()">Reset</button>
-      </div>
       <div class="card">
-        <h6>Data Penggarap Lahan</h6>
+        <h3>Data Penggarap Lahan</h3>
         <div class="table-container">
-          <table class="table table-sm table-striped">
-            <thead><tr><th>Lat</th><th>Lon</th><th>Date</th><th>Owner</th><th>LC</th><th>Village</th><th>Blok</th></tr></thead>
-            <tbody id="dataTable"></tbody>
+          <table>
+            <thead>
+              <tr>
+                <th>Nama</th>
+                <th>Luas (Ha)</th>
+                <th>Komoditas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Pak Budi</td><td>12</td><td>Sawit</td></tr>
+              <tr><td>Ibu Sari</td><td>8</td><td>Karet</td></tr>
+              <tr><td>Pak Andi</td><td>15</td><td>Padi</td></tr>
+              <tr><td>Pak Joko</td><td>20</td><td>Jagung</td></tr>
+              <tr><td>Bu Rina</td><td>10</td><td>Kakao</td></tr>
+              <!-- tambah data lain di sini -->
+            </tbody>
           </table>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ403sZK2ewFnVV11IPe-z-DXvTcyNFmVdtpxNRFfoCac2dOcwIvsy3yRiA2-2hK0aE-jdsvJpSwEzG/pub?output=csv";
-    const dangerURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSyVrG2pa34SK0pbRtAbdR4CBYt9KhpRCw3HYiDJWfDfEmV5oBe5-MrvJdiHk9eAg3jgx6VCHPC8fJZ/pub?gid=1905680802&single=true&output=csv";
-
-    let allData = [];
-    let desaChart, blokChart, timeChart;
-
+    // Inisialisasi peta Leaflet
     let map, markersLayer;
 
     function initMap() {
       map = L.map('map').setView([0.85, 110.33], 9);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
       markersLayer = L.layerGroup().addTo(map);
+
+      // contoh marker dummy
+      L.marker([0.85, 110.33]).addTo(markersLayer).bindPopup("Hotspot 1");
+      L.marker([0.9, 110.4]).addTo(markersLayer).bindPopup("Hotspot 2");
+
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 500);
     }
 
     initMap();
 
-    // load hotspot data
-    Papa.parse(sheetURL, {
-      download: true,
-      header: true,
-      complete: function(results) {
-        allData = results.data;
-        updateDashboard(allData);
-      }
-    });
-
-    // load fire danger data
-    Papa.parse(dangerURL, {
-      download: true,
-      header: true,
-      complete: function(results) {
-        const rows = results.data.filter(r => r.Tanggal);
-        const latest = rows[rows.length-1];
-        updateDanger("blok1Danger", latest["Blok 1"]);
-        updateDanger("blok2Danger", latest["Blok 2"]);
-      }
-    });
-
-    function updateDanger(id, value) {
-      const el = document.getElementById(id);
-      el.textContent = value;
-      el.className = "";
-      if (!value) return;
-      if (value.includes("LOW")) el.classList.add("danger-low");
-      else if (value.includes("MEDIUM")) el.classList.add("danger-medium");
-      else if (value.includes("HIGH")) el.classList.add("danger-high");
-      else if (value.includes("EXTREME")) el.classList.add("danger-extreme");
+    // Chart JS konfigurasi
+    function createChart(ctx, type, labels, data, label) {
+      return new Chart(ctx, {
+        type: type,
+        data: {
+          labels: labels,
+          datasets: [{
+            label: label,
+            data: data,
+            backgroundColor: type === 'bar' ? '#ff6666' : 'rgba(75, 192, 192, 0.2)',
+            borderColor: type === 'line' ? '#4bc0c0' : '#ff6666',
+            borderWidth: 2,
+            fill: type === 'line'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
     }
 
-    function updateDashboard(data) {
-      markersLayer.clearLayers();
-
-      const start = document.getElementById("startDate").value;
-      const end = document.getElementById("endDate").value;
-      let filtered = data.filter(d => d.latitude && d.longitude);
-      if (start) filtered = filtered.filter(d => new Date(d.acq_date) >= new Date(start));
-      if (end) filtered = filtered.filter(d => new Date(d.acq_date) <= new Date(end));
-
-      const today = new Date().toISOString().split("T")[0];
-      const month = today.slice(0,7);
-      document.getElementById("todayHotspot").innerText = filtered.filter(d => d.acq_date === today).length;
-      document.getElementById("monthHotspot").innerText = filtered.filter(d => d.acq_date.startsWith(month)).length;
-
-      filtered.forEach(d => {
-        L.circleMarker([+d.latitude, +d.longitude], {radius: 5, color:"red"}).bindPopup(
-          `Owner: ${d.Owner}<br>Desa: ${d.nama_kel}<br>Blok: ${d.Blok}<br>Date: ${d.acq_date}`
-        ).addTo(markersLayer);
-      });
-
-      const desaCount = {};
-      filtered.forEach(d => { desaCount[d.nama_kel] = (desaCount[d.nama_kel]||0)+1 });
-      updateBarChart(desaChart, "desaChart", Object.keys(desaCount), Object.values(desaCount), "orange");
-      
-      const blokCount = {};
-      filtered.forEach(d => {
-        let key = d.acq_date.slice(0,7) + " - " + d.Blok;
-        blokCount[key] = (blokCount[key]||0)+1;
-      });
-      updateBarChart(blokChart, "blokChart", Object.keys(blokCount), Object.values(blokCount), "green");
-
-      // grafik garis hotspot per hari
-      const timeCount = {};
-      filtered.forEach(d => { timeCount[d.acq_date] = (timeCount[d.acq_date]||0)+1 });
-      const sortedDates = Object.keys(timeCount).sort();
-      updateLineChart(timeChart, "timeChart", sortedDates, sortedDates.map(k=>timeCount[k]), "red");
-
-      const tbody = document.getElementById("dataTable");
-      tbody.innerHTML = "";
-      filtered.forEach(d => {
-        tbody.innerHTML += `<tr>
-          <td>${d.latitude}</td><td>${d.longitude}</td>
-          <td>${d.acq_date}</td><td>${d.Owner}</td>
-          <td>${d.LC23}</td><td>${d.nama_kel}</td><td>${d.Blok}</td>
-        </tr>`;
-      });
-
-      // fix bug map tidak muncul (redraw setelah update)
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 200);
-    }
-
-    function updateBarChart(chart, id, labels, values, color) {
-      if (chart) chart.destroy();
-      chart = new Chart(document.getElementById(id), {
-        type: "bar",
-        data: { labels: labels, datasets: [{data: values, backgroundColor: color}] },
-        options: { plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false }
-      });
-      if (id==="desaChart") desaChart = chart;
-      if (id==="blokChart") blokChart = chart;
-    }
-
-    function updateLineChart(chart, id, labels, values, color) {
-      if (chart) chart.destroy();
-      chart = new Chart(document.getElementById(id), {
-        type: "line",
-        data: { labels: labels, datasets: [{data: values, borderColor: color, backgroundColor: color, fill: false, tension:0.3}] },
-        options: { plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false }
-      });
-      if (id==="timeChart") timeChart = chart;
-    }
-
-    function resetFilter() {
-      document.getElementById("startDate").value = "";
-      document.getElementById("endDate").value = "";
-      updateDashboard(allData);
-    }
-
-    document.getElementById("startDate").addEventListener("change", ()=>updateDashboard(allData));
-    document.getElementById("endDate").addEventListener("change", ()=>updateDashboard(allData));
+    // Chart dummy data
+    createChart(document.getElementById('todayChart'), 'bar', ['Hari Ini'], [5], 'Hotspot');
+    createChart(document.getElementById('monthChart'), 'bar', ['Minggu 1', 'Minggu 2', 'Minggu 3'], [10, 15, 8], 'Hotspot');
+    createChart(document.getElementById('desaChart'), 'bar', ['Desa A', 'Desa B', 'Desa C'], [7, 12, 5], 'Hotspot');
+    createChart(document.getElementById('akumulasiChart'), 'bar', ['Jan', 'Feb', 'Mar'], [20, 35, 50], 'Hotspot');
+    createChart(document.getElementById('timeChart'), 'line', ['08:00', '12:00', '16:00', '20:00'], [2, 5, 3, 7], 'Hotspot per Waktu');
   </script>
 </body>
 </html>
