@@ -39,10 +39,10 @@
   </style>
 </head>
 <body>
-  <h4 class="text-center mb-4">🔥 Dashboard Pemantauan Kebakaran</h4>
+  <h4 class="text-center mb-4">Dashboard Pemantauan Kebakaran</h4>
 
   <div class="dashboard">
-    <!-- LEFT COLUMN -->
+
     <div class="left-col">
       <div class="card text-center">
         <h6>Titik Api Hari Ini</h6>
@@ -62,7 +62,6 @@
       </div>
     </div>
 
-    <!-- MIDDLE COLUMN -->
     <div class="middle-col">
       <div class="card">
         <h6>Sebaran Titik Api</h6>
@@ -70,7 +69,6 @@
       </div>
     </div>
 
-    <!-- RIGHT COLUMN -->
     <div class="right-col">
       <div class="card text-center">
         <h6>Rating Bahaya Blok 1</h6>
@@ -97,21 +95,20 @@
     </div>
   </div>
 
-  <!-- JS -->
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/1LQBP7816qSoLMbgGLQV3pcGmV_nC0jrp7akL2R4uh_c/gviz/tq?tqx=out:csv&gid=520066125";
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ403sZK2ewFnVV11IPe-z-DXvTcyNFmVdtpxNRFfoCac2dOcwIvsy3yRiA2-2hK0aE-jdsvJpSwEzG/pub?output=csv";
     let allData = [];
     let desaChart, blokChart;
 
-    // init map
+
     const map = L.map('map').setView([0.85, 110.33], 9);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     let markersLayer = L.layerGroup().addTo(map);
 
-    // fetch CSV
     Papa.parse(sheetURL, {
       download: true,
       header: true,
@@ -122,35 +119,29 @@
     });
 
     function updateDashboard(data) {
-      // clear map
       markersLayer.clearLayers();
 
-      // filter by date
       const start = document.getElementById("startDate").value;
       const end = document.getElementById("endDate").value;
       let filtered = data.filter(d => d.latitude && d.longitude);
       if (start) filtered = filtered.filter(d => new Date(d.acq_date) >= new Date(start));
       if (end) filtered = filtered.filter(d => new Date(d.acq_date) <= new Date(end));
 
-      // today & month hotspot
       const today = new Date().toISOString().split("T")[0];
       const month = today.slice(0,7);
       document.getElementById("todayHotspot").innerText = filtered.filter(d => d.acq_date === today).length;
       document.getElementById("monthHotspot").innerText = filtered.filter(d => d.acq_date.startsWith(month)).length;
 
-      // map markers
       filtered.forEach(d => {
         L.circleMarker([+d.latitude, +d.longitude], {radius: 5, color:"red"}).bindPopup(
           `Owner: ${d.Owner}<br>Desa: ${d.nama_kel}<br>Blok: ${d.Blok}<br>Date: ${d.acq_date}`
         ).addTo(markersLayer);
       });
 
-      // per desa
       const desaCount = {};
       filtered.forEach(d => { desaCount[d.nama_kel] = (desaCount[d.nama_kel]||0)+1 });
       updateChart(desaChart, "desaChart", Object.keys(desaCount), Object.values(desaCount), "orange");
-
-      // per blok per bulan
+      
       const blokCount = {};
       filtered.forEach(d => {
         let key = d.acq_date.slice(0,7) + " - " + d.Blok;
@@ -158,7 +149,6 @@
       });
       updateChart(blokChart, "blokChart", Object.keys(blokCount), Object.values(blokCount), "green");
 
-      // table
       const tbody = document.getElementById("dataTable");
       tbody.innerHTML = "";
       filtered.forEach(d => {
