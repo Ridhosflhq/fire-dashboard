@@ -2,59 +2,82 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Hotspot Dashboard 1</title>
+  <title>Hotspot Dashboard</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-    #map { height: 400px; }
-    .dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; }
-    .card { background: #f8f8f8; padding: 15px; border-radius: 8px; text-align: center; }
-    canvas { background: #fff; padding: 10px; border-radius: 8px; }
-    #table-container { padding: 10px; }
+    body { margin: 0; font-family: Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+    h2 { margin: 5px; text-align:center; }
+    .filter-box { padding: 5px; background: #e9ecef; display:flex; gap:10px; align-items:center; justify-content:center; }
+    
+    .grid {
+      flex: 1;
+      display: grid;
+      grid-template-rows: 40% 20% 40%;
+      grid-template-columns: 2fr 1fr;
+      grid-template-areas:
+        "map cards"
+        "charts charts"
+        "table table";
+      gap: 5px;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+
+    #map { grid-area: map; width:100%; height:100%; border-radius:8px; }
+    .cards { grid-area: cards; display:flex; flex-direction:column; gap:5px; }
+    .card { flex:1; background:#f8f8f8; border-radius:8px; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+    
+    .charts { grid-area: charts; display:flex; gap:10px; }
+    .charts canvas { flex:1; background:#fff; border-radius:8px; }
+    
+    .table-container { grid-area: table; background:#fff; border-radius:8px; display:flex; flex-direction:column; }
+    .table-container h3 { margin:5px; text-align:center; }
+    #dataTable_wrapper { flex:1; overflow-y:auto; }
   </style>
 </head>
 <body>
 
-<h2 style="text-align:center">Hotspot Dashboard</h2>
-<div id="map"></div>
+<h2>Hotspot Dashboard</h2>
 
-<div class="dashboard">
-  <div class="card">
-    <h3>Today’s Hotspot</h3>
-    <p id="todayCount">0</p>
-  </div>
-  <div class="card">
-    <h3>Monthly Hotspot</h3>
-    <p id="monthCount">0</p>
-  </div>
-  <div class="card">
-    <h3>Total Records</h3>
-    <p id="totalCount">0</p>
-  </div>
+<div class="filter-box">
+  <label>Start Date: <input type="date" id="startDate"></label>
+  <label>End Date: <input type="date" id="endDate"></label>
+  <button onclick="applyFilter()">Apply</button>
+  <button onclick="resetFilter()">Reset</button>
 </div>
 
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:10px;">
-  <canvas id="desaChart"></canvas>
-  <canvas id="blokChart"></canvas>
-</div>
+<div class="grid">
+  <div id="map"></div>
 
-<div id="table-container">
-  <h3>Data Penggarap Lahan</h3>
-  <table id="dataTable" class="display" style="width:100%">
-    <thead>
-      <tr>
-        <th>Latitude</th>
-        <th>Longitude</th>
-        <th>Date</th>
-        <th>Owner</th>
-        <th>Village</th>
-        <th>LC23</th>
-        <th>Blok</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="cards">
+    <div class="card"><h4>Today’s Hotspot</h4><p id="todayCount">0</p></div>
+    <div class="card"><h4>Monthly Hotspot</h4><p id="monthCount">0</p></div>
+    <div class="card"><h4>Total Records</h4><p id="totalCount">0</p></div>
+  </div>
+
+  <div class="charts">
+    <canvas id="desaChart"></canvas>
+    <canvas id="blokChart"></canvas>
+  </div>
+
+  <div class="table-container">
+    <h3>📋 Data Penggarap Lahan</h3>
+    <table id="dataTable" class="display" style="width:100%">
+      <thead>
+        <tr>
+          <th>Latitude</th>
+          <th>Longitude</th>
+          <th>Date</th>
+          <th>Owner</th>
+          <th>Village</th>
+          <th>LC23</th>
+          <th>Blok</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -64,71 +87,95 @@
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 
 <script>
-const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ403sZK2ewFnVV11IPe-z-DXvTcyNFmVdtpxNRFfoCac2dOcwIvsy3yRiA2-2hK0aE-jdsvJpSwEzG/pub?output=csv";
+const csvUrl = "https://docs.google.com/spreadsheets/d/1LQBP7816qSoLMbgGLQV3pcGmV_nC0jrp7akL2R4uh_c/export?format=csv&gid=520066125";
 
 let map = L.map('map').setView([0.85, 110.33], 9);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap'
-}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+let allData = [];
+let desaChart, blokChart, dataTable;
+let markersLayer = L.layerGroup().addTo(map);
 
 Papa.parse(csvUrl, {
   download: true,
   header: true,
   complete: function(results) {
-    let data = results.data;
-    let today = new Date().toISOString().slice(0,10);
-    let currentMonth = today.slice(0,7);
-
-    let todayCount = 0, monthCount = 0;
-    let desaCount = {}, blokCount = {};
-    let tableData = [];
-
-    data.forEach(row => {
-      if (!row.latitude || !row.longitude) return;
-      let lat = parseFloat(row.latitude), lon = parseFloat(row.longitude);
-      let date = row.acq_date;
-      let desa = row.nama_kel;
-      let blok = row.Blok;
-      let owner = row.Owner;
-      let lc = row.LC23;
-
-      L.circleMarker([lat, lon], { radius: 5, color: "red" })
-        .bindPopup(`<b>${desa}</b><br>Owner: ${owner}<br>Date: ${date}`)
-        .addTo(map);
-
-      if (date === today) todayCount++;
-      if (date.startsWith(currentMonth)) monthCount++;
-
-      desaCount[desa] = (desaCount[desa] || 0) + 1;
-      let monthKey = date.slice(0,7) + " - " + blok;
-      blokCount[monthKey] = (blokCount[monthKey] || 0) + 1;
-
-      tableData.push([lat, lon, date, owner, desa, lc, blok]);
-    });
-
-    document.getElementById("todayCount").innerText = todayCount;
-    document.getElementById("monthCount").innerText = monthCount;
-    document.getElementById("totalCount").innerText = data.length;
-
-    new Chart(document.getElementById("desaChart"), {
-      type: 'bar',
-      data: {
-        labels: Object.keys(desaCount),
-        datasets: [{ label: "Hotspot per Desa", data: Object.values(desaCount), backgroundColor: "orange" }]
-      }
-    });
-
-    new Chart(document.getElementById("blokChart"), {
-      type: 'bar',
-      data: {
-        labels: Object.keys(blokCount),
-        datasets: [{ label: "Akumulasi per Blok", data: Object.values(blokCount), backgroundColor: "green" }]
-      }
-    });
-
-    $('#dataTable').DataTable({ data: tableData });
+    allData = results.data.filter(d => d.latitude && d.longitude && d.acq_date);
+    renderDashboard(allData);
   }
 });
+
+function applyFilter() {
+  let start = document.getElementById("startDate").value;
+  let end = document.getElementById("endDate").value;
+  let filtered = allData.filter(row => {
+    let date = row.acq_date;
+    if (start && date < start) return false;
+    if (end && date > end) return false;
+    return true;
+  });
+  renderDashboard(filtered);
+}
+
+function resetFilter() {
+  document.getElementById("startDate").value = "";
+  document.getElementById("endDate").value = "";
+  renderDashboard(allData);
+}
+
+function renderDashboard(data) {
+  markersLayer.clearLayers();
+  let today = new Date().toISOString().slice(0,10);
+  let currentMonth = today.slice(0,7);
+  let todayCount = 0, monthCount = 0;
+  let desaCount = {}, blokCount = {};
+  let tableData = [];
+
+  data.forEach(row => {
+    let lat = parseFloat(row.latitude), lon = parseFloat(row.longitude);
+    let date = row.acq_date;
+    let desa = row.nama_kel;
+    let blok = row.Blok;
+    let owner = row.Owner;
+    let lc = row.LC23;
+
+    L.circleMarker([lat, lon], { radius: 5, color: "red" })
+      .bindPopup(`<b>${desa}</b><br>Owner: ${owner}<br>Date: ${date}`)
+      .addTo(markersLayer);
+
+    if (date === today) todayCount++;
+    if (date.startsWith(currentMonth)) monthCount++;
+
+    desaCount[desa] = (desaCount[desa] || 0) + 1;
+    let monthKey = date.slice(0,7) + " - " + blok;
+    blokCount[monthKey] = (blokCount[monthKey] || 0) + 1;
+
+    tableData.push([lat, lon, date, owner, desa, lc, blok]);
+  });
+
+  document.getElementById("todayCount").innerText = todayCount;
+  document.getElementById("monthCount").innerText = monthCount;
+  document.getElementById("totalCount").innerText = data.length;
+
+  if (desaChart) desaChart.destroy();
+  if (blokChart) blokChart.destroy();
+
+  desaChart = new Chart(document.getElementById("desaChart"), {
+    type: 'bar',
+    data: { labels: Object.keys(desaCount), datasets: [{ label: "Hotspot per Desa", data: Object.values(desaCount), backgroundColor: "orange" }] }
+  });
+
+  blokChart = new Chart(document.getElementById("blokChart"), {
+    type: 'bar',
+    data: { labels: Object.keys(blokCount), datasets: [{ label: "Akumulasi per Blok", data: Object.values(blokCount), backgroundColor: "green" }] }
+  });
+
+  if ($.fn.DataTable.isDataTable('#dataTable')) {
+    $('#dataTable').DataTable().clear().rows.add(tableData).draw();
+  } else {
+    dataTable = $('#dataTable').DataTable({ data: tableData, paging:false, searching:false, info:false });
+  }
+}
 </script>
 </body>
 </html>
