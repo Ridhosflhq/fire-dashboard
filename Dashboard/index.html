@@ -12,14 +12,14 @@
       margin: 0;
       padding: 10px;
       height: 100vh;
-      overflow: hidden; /* biar dashboard penuh layar */
+      overflow: hidden;
     }
     .dashboard {
       display: grid;
       grid-template-columns: 1fr 2fr 1fr;
       grid-template-rows: auto auto auto;
       gap: 15px;
-      height: calc(100vh - 60px); /* sisakan untuk judul */
+      height: calc(100vh - 60px); 
     }
     .card {
       background: #fff;
@@ -38,9 +38,9 @@
       width: 100% !important;
       height: 200px !important;
     }
-    /* buat container data selalu penuh */
+
     .table-container {
-      flex: 1; /* isi penuh tinggi card */
+      flex: 1; 
       overflow-y: auto;
       min-height: 0;
     }
@@ -125,7 +125,6 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     let markersLayer = L.layerGroup().addTo(map);
 
-    // load hotspot data
     Papa.parse(sheetURL, {
       download: true,
       header: true,
@@ -135,7 +134,6 @@
       }
     });
 
-    // load fire danger data
     Papa.parse(dangerURL, {
       download: true,
       header: true,
@@ -189,7 +187,6 @@
       });
       updateBarChart(blokChart, "blokChart", Object.keys(blokCount), Object.values(blokCount), "green");
 
-      // grafik garis hotspot per hari
       const timeCount = {};
       filtered.forEach(d => { timeCount[d.acq_date] = (timeCount[d.acq_date]||0)+1 });
       const sortedDates = Object.keys(timeCount).sort();
