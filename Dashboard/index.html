@@ -74,116 +74,137 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSgZRjQlxUsTPmrXiDCtwky4_A0FJrGDj_r7JLgsqi8gvjOWxmDKpBSdJDWFF38VfRuxUxzWSjhk46C/pub?gid=0&single=true&output=csv";
-    const dangerURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSyVrG2pa34SK0pbRtAbdR4CBYt9KhpRCw3HYiDJWfDfEmV5oBe5-MrvJdiHk9eAg3jgx6VCHPC8fJZ/pub?gid=1905680802&single=true&output=csv";
+ <script>
+  const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSgZRjQlxUsTPmrXiDCtwky4_A0FJrGDj_r7JLgsqi8gvjOWxmDKpBSdJDWFF38VfRuxUxzWSjhk46C/pub?gid=0&single=true&output=csv";
+  const dangerURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSyVrG2pa34SK0pbRtAbdR4CBYt9KhpRCw3HYiDJWfDfEmV5oBe5-MrvJdiHk9eAg3jgx6VCHPC8fJZ/pub?gid=1905680802&single=true&output=csv";
 
-    let allData = [];
-    let desaChart, blokChart, timeChart;
-    const map = L.map('map').setView([0.85, 110.33], 9);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    let markersLayer = L.layerGroup().addTo(map);
+  let allData = [];
+  let desaChart, blokChart, timeChart;
+  const map = L.map('map').setView([0.85, 110.33], 9);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  let markersLayer = L.layerGroup().addTo(map);
 
-    Papa.parse(sheetURL, { download: true, header: true, complete: function(results) {
-      allData = results.data;
-      updateDashboard(allData);
-    }});
+  Papa.parse(sheetURL, { download: true, header: true, complete: function(results) {
+    allData = results.data;
+    updateDashboard(allData);
+  }});
 
-    Papa.parse(dangerURL, { download: true, header: true, complete: function(results) {
-      const rows = results.data.filter(r => r.Tanggal);
-      const latest = rows[rows.length-1];
-      updateDanger("blok1Danger", latest["Blok 1"]);
-      updateDanger("blok2Danger", latest["Blok 2"]);
-    }});
+  Papa.parse(dangerURL, { download: true, header: true, complete: function(results) {
+    const rows = results.data.filter(r => r.Tanggal);
+    const latest = rows[rows.length-1];
+    updateDanger("blok1Danger", latest["Blok 1"]);
+    updateDanger("blok2Danger", latest["Blok 2"]);
+  }});
 
-    function updateDanger(id, value) {
-      const el = document.getElementById(id);
-      el.textContent = value;
-      el.className = "";
-      if (!value) return;
-      if (value.includes("LOW")) el.classList.add("danger-low");
-      else if (value.includes("MEDIUM")) el.classList.add("danger-medium");
-      else if (value.includes("HIGH")) el.classList.add("danger-high");
-      else if (value.includes("EXTREME")) el.classList.add("danger-extreme");
-    }
+  function updateDanger(id, value) {
+    const el = document.getElementById(id);
+    el.textContent = value;
+    el.className = "";
+    if (!value) return;
+    if (value.includes("LOW")) el.classList.add("danger-low");
+    else if (value.includes("MEDIUM")) el.classList.add("danger-medium");
+    else if (value.includes("HIGH")) el.classList.add("danger-high");
+    else if (value.includes("EXTREME")) el.classList.add("danger-extreme");
+  }
 
-    function updateDashboard(data) {
-      markersLayer.clearLayers();
-      const start = document.getElementById("startDate").value;
-      const end = document.getElementById("endDate").value;
-      let filtered = data.filter(d => d.latitude && d.longitude);
+  function updateDashboard(data) {
+    markersLayer.clearLayers();
+    const start = document.getElementById("startDate").value;
+    const end = document.getElementById("endDate").value;
+    let filtered = data.filter(d => d.latitude && d.longitude);
 
-      if (start) filtered = filtered.filter(d => new Date(d.date) >= new Date(start));
-      if (end) filtered = filtered.filter(d => new Date(d.date) <= new Date(end));
+    if (start) filtered = filtered.filter(d => new Date(d.date) >= new Date(start));
+    if (end) filtered = filtered.filter(d => new Date(d.date) <= new Date(end));
 
-      const today = new Date().toISOString().split("T")[0];
-      const month = today.slice(0,7);
-      document.getElementById("todayHotspot").innerText = filtered.filter(d => d.date === today).length;
-      document.getElementById("monthHotspot").innerText = filtered.filter(d => d.date.startsWith(month)).length;
+    const today = new Date().toISOString().split("T")[0];
+    const month = today.slice(0,7);
+    document.getElementById("todayHotspot").innerText = filtered.filter(d => d.date === today).length;
+    document.getElementById("monthHotspot").innerText = filtered.filter(d => d.date.startsWith(month)).length;
 
-      filtered.forEach(d => {
-        L.circleMarker([+d.latitude, +d.longitude], {radius: 5, color:"red"}).bindPopup(
+    filtered.forEach(d => {
+      let color = d.Blok === "Blok 1" ? "red" : "blue";
+      L.circleMarker([+d.latitude, +d.longitude], {radius: 5, color: color})
+        .bindPopup(
           `Owner: ${d.owner}<br>Desa: ${d.village}<br>Blok: ${d.Blok}<br>Date: ${d.date}`
         ).addTo(markersLayer);
-      });
+    });
 
-      const desaCount = {};
-      filtered.forEach(d => { desaCount[d.village] = (desaCount[d.village]||0)+1 });
-      updateChart(desaChart, "desaChart", Object.keys(desaCount), Object.values(desaCount), "orange");
+    const desaCount = {};
+    filtered.forEach(d => { desaCount[d.village] = (desaCount[d.village]||0)+1 });
+    updateChart(desaChart, "desaChart", Object.keys(desaCount), Object.values(desaCount), "orange");
 
-      const blokCount = {};
-      filtered.forEach(d => {
-        let key = d.date.slice(0,7) + " - " + d.Blok;
-        blokCount[key] = (blokCount[key]||0)+1;
-      });
-      updateChart(blokChart, "blokChart", Object.keys(blokCount), Object.values(blokCount), "green");
+    const blokMonthly = {};
+    filtered.forEach(d => {
+      let monthKey = d.date.slice(0,7);
+      if (!blokMonthly[monthKey]) blokMonthly[monthKey] = { "Blok 1": 0, "Blok 2": 0 };
+      blokMonthly[monthKey][d.Blok] = (blokMonthly[monthKey][d.Blok]||0) + 1;
+    });
+    const months = Object.keys(blokMonthly).sort();
+    const blok1Vals = months.map(m => blokMonthly[m]["Blok 1"] || 0);
+    const blok2Vals = months.map(m => blokMonthly[m]["Blok 2"] || 0);
 
-      const timeCount = {};
-      filtered.forEach(d => {
-        let key = d.date.slice(0,7);
-        timeCount[key] = (timeCount[key] || 0) + 1;
-      });
-      updateLineChart(timeChart, "timeChart", Object.keys(timeCount), Object.values(timeCount));
+    if (blokChart) blokChart.destroy();
+    blokChart = new Chart(document.getElementById("blokChart"), {
+      type: "bar",
+      data: {
+        labels: months,
+        datasets: [
+          { label: "Blok 1", data: blok1Vals, backgroundColor: "red" },
+          { label: "Blok 2", data: blok2Vals, backgroundColor: "blue" }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
 
-      const tbody = document.getElementById("dataTable");
-      tbody.innerHTML = "";
-      filtered.forEach(d => {
-        tbody.innerHTML += `<tr>
-          <td>${d.latitude}</td><td>${d.longitude}</td>
-          <td>${d.date}</td><td>${d.owner}</td>
-          <td>${d.LC}</td><td>${d.village}</td><td>${d.Blok}</td>
-        </tr>`;
-      });
-    }
+    const timeCount = {};
+    filtered.forEach(d => {
+      let key = d.date.slice(0,7);
+      timeCount[key] = (timeCount[key] || 0) + 1;
+    });
+    const timeLabels = Object.keys(timeCount).sort();
+    const timeVals = timeLabels.map(k => timeCount[k]);
 
-    function updateChart(chart, id, labels, values, color) {
-      if (chart) chart.destroy();
-      chart = new Chart(document.getElementById(id), {
-        type: "bar",
-        data: { labels: labels, datasets: [{data: values, backgroundColor: color}] },
-        options: { plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false }
-      });
-      if (id==="desaChart") desaChart = chart;
-      if (id==="blokChart") blokChart = chart;
-    }
+    updateLineChart(timeChart, "timeChart", timeLabels, timeVals);
 
-    function updateLineChart(chart, id, labels, values) {
-      if (chart) chart.destroy();
-      chart = new Chart(document.getElementById(id), {
-        type: "line",
-        data: { labels: labels, datasets: [{ label: "Hotspot / Bulan", data: values, borderColor: "blue", backgroundColor: "lightblue", fill: true, tension: 0.3 }] },
-        options: { plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { autoSkip: true, maxTicksLimit: 6 } } } }
-      });
-      timeChart = chart;
-    }
+    const tbody = document.getElementById("dataTable");
+    tbody.innerHTML = "";
+    filtered.forEach(d => {
+      tbody.innerHTML += `<tr>
+        <td>${d.latitude}</td><td>${d.longitude}</td>
+        <td>${d.date}</td><td>${d.owner}</td>
+        <td>${d.LC}</td><td>${d.village}</td><td>${d.Blok}</td>
+      </tr>`;
+    });
+  }
 
-    function resetFilter() {
-      document.getElementById("startDate").value = "";
-      document.getElementById("endDate").value = "";
-      updateDashboard(allData);
-    }
-    document.getElementById("startDate").addEventListener("change", ()=>updateDashboard(allData));
-    document.getElementById("endDate").addEventListener("change", ()=>updateDashboard(allData));
-  </script>
+  function updateChart(chart, id, labels, values, color) {
+    if (chart) chart.destroy();
+    chart = new Chart(document.getElementById(id), {
+      type: "bar",
+      data: { labels: labels, datasets: [{data: values, backgroundColor: color}] },
+      options: { plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false }
+    });
+    if (id==="desaChart") desaChart = chart;
+  }
+
+  function updateLineChart(chart, id, labels, values) {
+    if (chart) chart.destroy();
+    chart = new Chart(document.getElementById(id), {
+      type: "line",
+      data: { labels: labels, datasets: [{ label: "Hotspot / Bulan", data: values, borderColor: "blue", backgroundColor: "lightblue", fill: true, tension: 0.3 }] },
+      options: { plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { autoSkip: true, maxTicksLimit: 6 } } } }
+    });
+    timeChart = chart;
+  }
+
+  function resetFilter() {
+    document.getElementById("startDate").value = "";
+    document.getElementById("endDate").value = "";
+    updateDashboard(allData);
+  }
+  document.getElementById("startDate").addEventListener("change", ()=>updateDashboard(allData));
+  document.getElementById("endDate").addEventListener("change", ()=>updateDashboard(allData));
+</script>
+
 </body>
 </html>
